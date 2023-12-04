@@ -1,7 +1,7 @@
 use std::fs::read_to_string;
 
 fn main() {
-    let sum: i32 = read_to_string("./assets/one/input.txt").
+    let sum: i32 = read_to_string("input.txt").
         unwrap().
         lines().
         fold(0, |acc, line| acc + extract(line));
