@@ -9,13 +9,9 @@ fn main() {
 }
 
 fn solve_part1() {
-    let rule = game::Rule{
-        red: 12,
-        green: 13,
-        blue: 14
-    };
+    let rule = game::Set(12, 13, 14);
 
-    let sum: u32 = read_to_string("input_part1.txt").
+    let sum: u32 = read_to_string("input.txt").
         unwrap().
         lines().
         map(|line| parser::parse_game(line).unwrap().1 ).
@@ -26,5 +22,11 @@ fn solve_part1() {
 }
 
 fn solve_part2() {
-    println!("PART2: {}", "todo!()")
+    let sum: u32 = read_to_string("input.txt").
+        unwrap().
+        lines().
+        map(|line| parser::parse_game(line).unwrap().1.power() ).
+        sum();
+
+    println!("PART 2: {}", sum)
 }
