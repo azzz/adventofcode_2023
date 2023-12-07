@@ -1,4 +1,4 @@
-use std::{collections::HashSet, fs::read_to_string};
+use std::{collections::{HashSet, LinkedList}, fs::read_to_string};
 use nom::{
     bytes::complete::tag, 
     IResult, combinator::map_res, 
@@ -8,36 +8,58 @@ use nom::{
 };
 
 fn main() {
-    solve_part_1()
+    let input = read_to_string("input.txt").unwrap();
+    println!("PART 1: {}", solve_part_1(&input));
+    println!("PART 2: {}", solve_part_2(&input));
 }
 
-
-fn solve_part_1() {
-    let sum: u32 = read_to_string("input.txt").
-        unwrap().
-        lines().
+fn solve_part_1(input: &String) -> u32 {
+    input.lines().
         map(|line| parse(line).unwrap() ).
-        map(|c| c.points() ).sum();
+        map(|c| c.points() ).sum()
+}
 
-    println!("PART 1: {}", sum)
+fn solve_part_2(input: &String) -> u32 {
+    let mut sum: u32 = 0;
+    let mut extras: LinkedList<u32> = LinkedList::new();
+
+    for line in input.lines() {
+        let card = parse(line).unwrap();
+        let copies = extras.pop_front().unwrap_or(0) + 1;
+        let matches = card.matches();
+        let mut updates = LinkedList::new();
+
+        for _ in 0..matches {
+            match extras.pop_front() {
+                Some(v) => updates.push_back(v + copies),
+                None => updates.push_back(copies)
+            }
+        }
+
+        updates.append(&mut extras);
+        extras = updates;
+
+        sum += copies;
+
+    }
+    sum
 }
 
 struct Card {
     nums: HashSet<u32>,
     wins: HashSet<u32>,
-    copies: u32,
 }
 
 impl Card {
     fn points(&self) -> u32 {
-        let n = self.win_nums();
+        let n = self.matches();
 
         if n == 0 { return 0 }
         (2 as u32).pow(n-1)
     }
 
-    fn win_nums(&self) -> u32 {
-        self.copies * self.nums.intersection(&self.wins).count() as u32
+    fn matches(&self) -> u32 {
+        self.nums.intersection(&self.wins).count() as u32
     }
 }
 
@@ -49,7 +71,7 @@ impl From<(Vec<u32>, Vec<u32>)> for Card {
         for n in nums.iter() { nums_set.insert(*n); };
         for n in wins.iter() { wins_set.insert(*n); };
 
-        Self { nums: nums_set, wins: wins_set, copies: 1 }
+        Self { nums: nums_set, wins: wins_set }
     }
 }
 
@@ -76,11 +98,26 @@ fn parse_card(input: &str) -> IResult<&str, (Vec<u32>, Vec<u32>)> {
 
 #[cfg(test)]
 mod test {
-    use crate::parse_card;
+    use crate::{parse_card, solve_part_2};
 
     #[test]
     fn parse_card_test() {
         assert_eq!(parse_card("Card 1: 7  43 12 |  33 12 5"), Ok(("", (vec![7, 43, 12], vec![33, 12, 5]))));
+    }
+
+    #[test]
+    fn solve_part_2_test() {
+        {
+            let input = "Card 1: 41 48 83 86 17 | 83 86  6 31 17  9 48 53\n".to_owned() +
+            "Card 2: 13 32 20 16 61 | 61 30 68 82 17 32 24 19\n" +
+            "Card 3:  1 21 53 59 44 | 69 82 63 72 16 21 14  1\n" +
+            "Card 4: 41 92 73 84 69 | 59 84 76 51 58  5 54 83\n" +
+            "Card 5: 87 83 26 28 32 | 88 30 70 12 93 22 82 36\n" +
+            "Card 6: 31 18 13 56 72 | 74 77 10 23 35 67 36 11\n";
+
+
+            assert_eq!(solve_part_2(&input), 30)
+        }
     }
 }
 
@@ -91,12 +128,18 @@ mod card_test {
     #[test]
     fn points() {
         {
-            let card = Card([41,48,83,86,17].into(), [83, 86, 6, 31, 17, 9, 48, 53].into());
+            let card = Card{
+                nums: [41,48,83,86,17].into(), 
+                wins: [83, 86, 6, 31, 17, 9, 48, 53].into()
+            };
             assert_eq!(card.points(), 8);
         }
 
         {
-            let card = Card([87, 83, 26, 28, 32].into(), [88, 30, 70, 12, 93, 22, 82, 36].into());
+            let card = Card{
+                nums: [87, 83, 26, 28, 32].into(), 
+                wins: [88, 30, 70, 12, 93, 22, 82, 36].into()
+            };
             assert_eq!(card.points(), 0);
         }
     }
